@@ -474,8 +474,8 @@ export default function Landing() {
         <section className="hero-section" id="showcase">
           <div className="hero-bg" />
           
-          {/* Efeito de Explosão e Rachaduras */}
-          {explosionActive && (
+          {/* Efeito de Explosão e Rachaduras - APENAS NO DESKTOP */}
+          {!isMobile && explosionActive && (
             <motion.div
               className="explosion-effect"
               initial={{ scale: 0, opacity: 0 }}
@@ -484,7 +484,7 @@ export default function Landing() {
             />
           )}
           
-          {cracksVisible && (
+          {!isMobile && cracksVisible && (
             <>
               {/* Sistema de Rachaduras Cinematográficas */}
               <div className="cracks-overlay">
@@ -631,8 +631,8 @@ export default function Landing() {
             </>
           )}
           
-          {/* Bolhas Interativas */}
-          {bubbles.map(bubble => (
+          {/* Bolhas Interativas - APENAS NO DESKTOP */}
+          {!isMobile && bubbles.map(bubble => (
             <motion.div
               key={bubble.id}
               className={`floating-bubble color-${bubble.color} ${bubble.isDragging ? 'dragging' : ''} ${explosionActive ? 'exploding' : ''}`}
@@ -659,8 +659,8 @@ export default function Landing() {
             </motion.div>
           ))}
           
-          {/* Efeito de fusão */}
-          {fusionEffect && (
+          {/* Efeito de fusão - APENAS NO DESKTOP */}
+          {!isMobile && fusionEffect && (
             <motion.div
               className={`fusion-effect color-${fusionEffect.color}`}
               style={{
@@ -702,9 +702,9 @@ export default function Landing() {
           </motion.div>
         </section>
 
-        {/* Mensagem Final Épica */}
+        {/* Mensagem Final Épica - APENAS NO DESKTOP */}
         <AnimatePresence mode="wait">
-          {showFinalMessage && (
+          {!isMobile && showFinalMessage && (
             <motion.div 
               className="final-epic-message"
               initial={{ opacity: 0, scale: 0.5 }}
@@ -1672,6 +1672,45 @@ export default function Landing() {
           .image-gallery { grid-template-columns:repeat(auto-fit,minmax(60px,1fr)); }
           .image-gallery img { height:60px; }
           .contact-options { flex-direction:column; }
+          
+          /* Correções para evitar cortes laterais no mobile */
+          .hero-section { 
+            padding: 1rem 1rem; 
+            margin: 0; 
+            box-sizing: border-box;
+            width: 100%;
+            overflow-x: hidden;
+          }
+          .hero-content-elevated { 
+            padding: 0 1rem; 
+            max-width: 100%;
+            box-sizing: border-box;
+          }
+          .hero-cta { 
+            padding: 0 1rem; 
+            max-width: 100%;
+          }
+          .badge { 
+            margin: 0.5rem 0; 
+            box-sizing: border-box;
+          }
+          .products-grid { 
+            padding: 0 1rem; 
+            margin: 0;
+            box-sizing: border-box;
+          }
+          .product-card { 
+            margin: 0 auto; 
+            max-width: 100%;
+          }
+          body { 
+            overflow-x: hidden; 
+            margin: 0; 
+            padding: 0;
+          }
+          * { 
+            box-sizing: border-box; 
+          }
         }
       `}</style>
     </>
