@@ -51,46 +51,90 @@ export default function Landing() {
   useEffect(() => {
     setCurrentImageIndex(0)
   }, [selectedProduct])
+
+  // Event listeners globais para movimento das bolhas
+  useEffect(() => {
+    const handleMove = (e: MouseEvent | TouchEvent) => {
+      const draggingBubble = bubbles.find(b => b.isDragging)
+      if (!draggingBubble) return
+
+      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+      
+      updateBubblePosition(draggingBubble.id, clientX, clientY)
+    }
+
+    const handleMouseMove = (e: MouseEvent) => handleMove(e)
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault() // Previne scroll
+      handleMove(e)
+    }
+
+    // Adicionar listeners
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('touchmove', handleTouchMove, { passive: false })
+    document.addEventListener('mouseup', handleEnd)
+    document.addEventListener('touchend', handleEnd)
+    document.addEventListener('touchcancel', handleEnd)
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('touchmove', handleTouchMove)
+      document.removeEventListener('mouseup', handleEnd)
+      document.removeEventListener('touchend', handleEnd)
+      document.removeEventListener('touchcancel', handleEnd)
+    }
+  }, [bubbles]) // Dependência para atualizar quando bubbles mudam
   
   // Funções para arrastar bolhas
-  const handleBubbleMouseDown = (bubbleId: number, e: React.MouseEvent) => {
-    e.preventDefault()
+  // Sistema unificado de arrasto para desktop e mobile
+  const handleBubbleStart = (bubbleId: number, clientX: number, clientY: number) => {
     setBubbles(prev => prev.map(b => 
       b.id === bubbleId ? { ...b, isDragging: true } : b
     ))
+    
+    // Calcular posição inicial
+    updateBubblePosition(bubbleId, clientX, clientY)
   }
 
-  // Funções de touch para mobile
+  const handleBubbleMouseDown = (bubbleId: number, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    handleBubbleStart(bubbleId, e.clientX, e.clientY)
+  }
+
   const handleBubbleTouchStart = (bubbleId: number, e: React.TouchEvent) => {
     e.preventDefault()
-    setBubbles(prev => prev.map(b => 
-      b.id === bubbleId ? { ...b, isDragging: true } : b
-    ))
+    e.stopPropagation()
+    const touch = e.touches[0]
+    if (touch) {
+      handleBubbleStart(bubbleId, touch.clientX, touch.clientY)
+    }
   }
-  
-  const handleMouseMove = (e: React.MouseEvent) => {
-    const draggingBubble = bubbles.find(b => b.isDragging)
-    if (!draggingBubble) return
-    
+
+  // Função unificada para atualizar posição das bolhas
+  const updateBubblePosition = (bubbleId: number, clientX: number, clientY: number) => {
     const heroSection = document.querySelector('.hero-section')
     if (!heroSection) return
     
     const rect = heroSection.getBoundingClientRect()
     
-    // Calcular posição em porcentagem baseada na posição do cursor
-    const x = ((e.clientX - rect.left) / rect.width) * 100
-    const y = ((e.clientY - rect.top) / rect.height) * 100
+    // Calcular posição em porcentagem
+    const x = ((clientX - rect.left) / rect.width) * 100
+    const y = ((clientY - rect.top) / rect.height) * 100
     
-    // Permitir movimento por toda a área azul (0% a 100%)
-    const clampedX = Math.max(0, Math.min(100, x))
-    const clampedY = Math.max(0, Math.min(100, y))
+    // Limites seguros para evitar que as bolhas saiam da área
+    const margin = 12 // Margem de segurança aumentada
+    const clampedX = Math.max(margin, Math.min(100 - margin, x))
+    const clampedY = Math.max(margin, Math.min(100 - margin, y))
     
     setBubbles(prev => prev.map(b => 
-      b.id === draggingBubble.id ? { ...b, x: clampedX, y: clampedY } : b
+      b.id === bubbleId ? { ...b, x: clampedX, y: clampedY } : b
     ))
   }
   
-  const handleMouseUp = () => {
+  const handleEnd = () => {
     setBubbles(prev => prev.map(b => ({ ...b, isDragging: false })))
     checkBubbleCollisions()
   }
@@ -236,76 +280,35 @@ export default function Landing() {
   useEffect(() => {
     let animationFrameId: number
     
+    // Eventos unificados de movimento
+    const handleGlobalMove = (clientX: number, clientY: number) => {
+      const draggingBubble = bubbles.find(b => b.isDragging)
+      if (!draggingBubble) return
+      
+      // Usar requestAnimationFrame para performance
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId)
+      }
+      
+      animationFrameId = requestAnimationFrame(() => {
+        updateBubblePosition(draggingBubble.id, clientX, clientY)
+      })
+    }
+
     const handleGlobalMouseMove = (e: MouseEvent) => {
-      const draggingBubble = bubbles.find(b => b.isDragging)
-      if (!draggingBubble) return
-      
-      // Usar requestAnimationFrame para performance máxima
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId)
-      }
-      
-      animationFrameId = requestAnimationFrame(() => {
-        const heroSection = document.querySelector('.hero-section')
-        if (!heroSection) return
-        
-        const rect = heroSection.getBoundingClientRect()
-        
-        // Calcular posição em porcentagem
-        const x = ((e.clientX - rect.left) / rect.width) * 100
-        const y = ((e.clientY - rect.top) / rect.height) * 100
-        
-        // Limites mais restritivos para mobile e desktop
-        // Criar margens de segurança para evitar que as bolhas saiam da área
-        const margin = 8 // 8% de margem
-        const clampedX = Math.max(margin, Math.min(100 - margin, x))
-        const clampedY = Math.max(margin, Math.min(100 - margin, y))
-        
-        setBubbles(prev => prev.map(b => 
-          b.id === draggingBubble.id ? { ...b, x: clampedX, y: clampedY } : b
-        ))
-      })
-    }
-    
-    const handleGlobalMouseUp = () => {
-      setBubbles(prev => prev.map(b => ({ ...b, isDragging: false })))
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId)
-      }
-      // Verificar colisões após soltar
-      setTimeout(checkBubbleCollisions, 100)
+      e.preventDefault()
+      handleGlobalMove(e.clientX, e.clientY)
     }
 
-    // Funções globais de touch
     const handleGlobalTouchMove = (e: TouchEvent) => {
-      const draggingBubble = bubbles.find(b => b.isDragging)
-      if (!draggingBubble) return
-      
+      e.preventDefault()
       const touch = e.touches[0]
-      if (!touch) return
-      
-      animationFrameId = requestAnimationFrame(() => {
-        const heroSection = document.querySelector('.hero-section')
-        if (!heroSection) return
-        
-        const rect = heroSection.getBoundingClientRect()
-        
-        // Calcular posição em porcentagem para touch
-        const x = ((touch.clientX - rect.left) / rect.width) * 100
-        const y = ((touch.clientY - rect.top) / rect.height) * 100
-        
-        // Limites mais restritivos para mobile
-        const margin = 10 // Margem maior para mobile
-        const clampedX = Math.max(margin, Math.min(100 - margin, x))
-        const clampedY = Math.max(margin, Math.min(100 - margin, y))
-        
-        setBubbles(prev => prev.map(b => 
-          b.id === draggingBubble.id ? { ...b, x: clampedX, y: clampedY } : b
-        ))
-      })
+      if (touch) {
+        handleGlobalMove(touch.clientX, touch.clientY)
+      }
     }
 
-    const handleGlobalTouchEnd = () => {
+    const handleGlobalEnd = () => {
       setBubbles(prev => prev.map(b => ({ ...b, isDragging: false })))
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId)
@@ -314,26 +317,29 @@ export default function Landing() {
       setTimeout(checkBubbleCollisions, 100)
     }
     
+    // Adicionar eventos se alguma bolha está sendo arrastada
     if (bubbles.some(b => b.isDragging)) {
-      document.addEventListener('mousemove', handleGlobalMouseMove, { passive: true })
-      document.addEventListener('mouseup', handleGlobalMouseUp)
-      // Eventos de touch para mobile
+      // Eventos de mouse
+      document.addEventListener('mousemove', handleGlobalMouseMove, { passive: false })
+      document.addEventListener('mouseup', handleGlobalEnd, { passive: false })
+      
+      // Eventos de touch
       document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false })
-      document.addEventListener('touchend', handleGlobalTouchEnd)
+      document.addEventListener('touchend', handleGlobalEnd, { passive: false })
+      document.addEventListener('touchcancel', handleGlobalEnd, { passive: false })
     }
     
     return () => {
       document.removeEventListener('mousemove', handleGlobalMouseMove)
-      document.removeEventListener('mouseup', handleGlobalMouseUp)
+      document.removeEventListener('mouseup', handleGlobalEnd)
       document.removeEventListener('touchmove', handleGlobalTouchMove)
-      document.removeEventListener('touchend', handleGlobalTouchEnd)
+      document.removeEventListener('touchend', handleGlobalEnd)
+      document.removeEventListener('touchcancel', handleGlobalEnd)
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId)
       }
     }
-  }, [bubbles, checkBubbleCollisions])
-  
-  // Função para obter todas as imagens disponíveis de um produto
+  }, [bubbles, checkBubbleCollisions])  // Função para obter todas as imagens disponíveis de um produto
   const getAvailableImages = (product: any) => {
     // Por enquanto vamos assumir que cada produto tem até 6 fotos
     const imageMap: Record<string, number> = {
@@ -641,8 +647,8 @@ export default function Landing() {
                 top: `${bubble.y}%`,
                 cursor: bubble.isDragging ? 'grabbing' : 'grab'
               }}
-              onMouseDown={(e) => handleBubbleMouseDown(bubble.id, e)}
-              onTouchStart={(e) => handleBubbleTouchStart(bubble.id, e)}
+              onMouseDown={(e) => handleBubbleStart(bubble.id, e.clientX, e.clientY)}
+              onTouchStart={(e) => handleBubbleStart(bubble.id, e.touches[0].clientX, e.touches[0].clientY)}
               initial={{ opacity: 0, scale: 0 }}
               animate={{ 
                 opacity: explosionActive ? 0 : 1, 
