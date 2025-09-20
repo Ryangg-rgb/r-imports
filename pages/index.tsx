@@ -59,6 +59,14 @@ export default function Landing() {
       b.id === bubbleId ? { ...b, isDragging: true } : b
     ))
   }
+
+  // Funções de touch para mobile
+  const handleBubbleTouchStart = (bubbleId: number, e: React.TouchEvent) => {
+    e.preventDefault()
+    setBubbles(prev => prev.map(b => 
+      b.id === bubbleId ? { ...b, isDragging: true } : b
+    ))
+  }
   
   const handleMouseMove = (e: React.MouseEvent) => {
     const draggingBubble = bubbles.find(b => b.isDragging)
@@ -247,9 +255,11 @@ export default function Landing() {
         const x = ((e.clientX - rect.left) / rect.width) * 100
         const y = ((e.clientY - rect.top) / rect.height) * 100
         
-        // Permitir movimento por toda a área azul (0% a 100%)
-        const clampedX = Math.max(0, Math.min(100, x))
-        const clampedY = Math.max(0, Math.min(100, y))
+        // Limites mais restritivos para mobile e desktop
+        // Criar margens de segurança para evitar que as bolhas saiam da área
+        const margin = 8 // 8% de margem
+        const clampedX = Math.max(margin, Math.min(100 - margin, x))
+        const clampedY = Math.max(margin, Math.min(100 - margin, y))
         
         setBubbles(prev => prev.map(b => 
           b.id === draggingBubble.id ? { ...b, x: clampedX, y: clampedY } : b
@@ -265,15 +275,58 @@ export default function Landing() {
       // Verificar colisões após soltar
       setTimeout(checkBubbleCollisions, 100)
     }
+
+    // Funções globais de touch
+    const handleGlobalTouchMove = (e: TouchEvent) => {
+      const draggingBubble = bubbles.find(b => b.isDragging)
+      if (!draggingBubble) return
+      
+      const touch = e.touches[0]
+      if (!touch) return
+      
+      animationFrameId = requestAnimationFrame(() => {
+        const heroSection = document.querySelector('.hero-section')
+        if (!heroSection) return
+        
+        const rect = heroSection.getBoundingClientRect()
+        
+        // Calcular posição em porcentagem para touch
+        const x = ((touch.clientX - rect.left) / rect.width) * 100
+        const y = ((touch.clientY - rect.top) / rect.height) * 100
+        
+        // Limites mais restritivos para mobile
+        const margin = 10 // Margem maior para mobile
+        const clampedX = Math.max(margin, Math.min(100 - margin, x))
+        const clampedY = Math.max(margin, Math.min(100 - margin, y))
+        
+        setBubbles(prev => prev.map(b => 
+          b.id === draggingBubble.id ? { ...b, x: clampedX, y: clampedY } : b
+        ))
+      })
+    }
+
+    const handleGlobalTouchEnd = () => {
+      setBubbles(prev => prev.map(b => ({ ...b, isDragging: false })))
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId)
+      }
+      // Verificar colisões após soltar
+      setTimeout(checkBubbleCollisions, 100)
+    }
     
     if (bubbles.some(b => b.isDragging)) {
       document.addEventListener('mousemove', handleGlobalMouseMove, { passive: true })
       document.addEventListener('mouseup', handleGlobalMouseUp)
+      // Eventos de touch para mobile
+      document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false })
+      document.addEventListener('touchend', handleGlobalTouchEnd)
     }
     
     return () => {
       document.removeEventListener('mousemove', handleGlobalMouseMove)
       document.removeEventListener('mouseup', handleGlobalMouseUp)
+      document.removeEventListener('touchmove', handleGlobalTouchMove)
+      document.removeEventListener('touchend', handleGlobalTouchEnd)
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId)
       }
@@ -589,6 +642,7 @@ export default function Landing() {
                 cursor: bubble.isDragging ? 'grabbing' : 'grab'
               }}
               onMouseDown={(e) => handleBubbleMouseDown(bubble.id, e)}
+              onTouchStart={(e) => handleBubbleTouchStart(bubble.id, e)}
               initial={{ opacity: 0, scale: 0 }}
               animate={{ 
                 opacity: explosionActive ? 0 : 1, 
