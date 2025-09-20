@@ -790,6 +790,15 @@ export default function Landing() {
                     transition={{ duration:0.6, delay:i*0.1, ease:[0.19,1,0.22,1] }}
                     onClick={() => setSelectedProduct(produto)}
                   >
+                    <div className="product-image">
+                      <img 
+                        src={`/produtos/${produto.id}/foto1.jpg`} 
+                        alt={produto.nome}
+                        onError={(e) => {
+                          e.currentTarget.src = '/logo.svg' // Fallback para o logo se a imagem não existir
+                        }}
+                      />
+                    </div>
                     <div className="product-info">
                       <h4>{produto.nome}</h4>
                       <p className="product-price">{produto.preco}</p>
@@ -1502,6 +1511,9 @@ export default function Landing() {
         .products-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:2rem; margin-bottom:3rem; }
         .product-card { background:white; border-radius:20px; padding:2rem; box-shadow:0 4px 6px rgba(0,0,0,0.05); transition:all 0.3s ease; border-top:4px solid #d4af37; cursor:pointer; }
         .product-card:hover { transform:translateY(-5px); box-shadow:0 20px 40px rgba(11,31,59,0.15); }
+        .product-image { margin-bottom:1.5rem; border-radius:15px; overflow:hidden; height:200px; background:#f8fafc; }
+        .product-image img { width:100%; height:100%; object-fit:cover; transition:transform 0.3s ease; }
+        .product-card:hover .product-image img { transform:scale(1.05); }
         .product-info h4 { font-size:1.3rem; font-weight:700; color:#0b1f3b; margin-bottom:0.5rem; }
         .product-price { font-size:1.1rem; font-weight:600; color:#d4af37; margin-bottom:0.8rem; }
         .product-desc { color:#64748b; margin-bottom:1rem; line-height:1.5; }
@@ -1690,6 +1702,10 @@ export default function Landing() {
           .product-card { 
             margin: 0 auto; 
             max-width: 100%;
+          }
+          .product-image { 
+            height: 180px; 
+            margin-bottom: 1rem;
           }
           body { 
             overflow-x: hidden; 
