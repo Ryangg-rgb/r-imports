@@ -139,7 +139,9 @@ export default function Landing() {
     }
   }, [bubbles, isMobile])
 
-  // ========== SISTEMA MOBILE (Touch) ==========
+  // ========== SISTEMA MOBILE (Touch) - DESABILITADO ==========
+  // Como as bolhas não aparecem no mobile, essas funções não são mais necessárias
+  /*
   const updateBubblePositionMobile = (bubbleId: number, clientX: number, clientY: number) => {
     const heroSection = document.querySelector('.hero-section')
     if (!heroSection) return
@@ -173,27 +175,12 @@ export default function Landing() {
     setBubbles(prev => prev.map(b => ({ ...b, isDragging: false })))
     checkBubbleCollisions()
   }
+  */
 
-  // Event listeners para MOBILE
+  // Event listeners para MOBILE - DESABILITADO (bolhas não aparecem no mobile)
   useEffect(() => {
-    if (!isMobile) return // Não ativar no desktop
-    
-    const handleTouchMove = (e: TouchEvent) => {
-      e.preventDefault() // Previne scroll
-      const draggingBubble = bubbles.find(b => b.isDragging)
-      if (!draggingBubble || !e.touches[0]) return
-      updateBubblePositionMobile(draggingBubble.id, e.touches[0].clientX, e.touches[0].clientY)
-    }
-
-    document.addEventListener('touchmove', handleTouchMove, { passive: false })
-    document.addEventListener('touchend', handleMobileEnd)
-    document.addEventListener('touchcancel', handleMobileEnd)
-
-    return () => {
-      document.removeEventListener('touchmove', handleTouchMove)
-      document.removeEventListener('touchend', handleMobileEnd)
-      document.removeEventListener('touchcancel', handleMobileEnd)
-    }
+    // Como as bolhas não aparecem no mobile, não precisamos dos event listeners
+    return // Retorna sem fazer nada
   }, [bubbles, isMobile])
 
   // Função para verificar colisões e fusões entre bolhas
@@ -642,7 +629,6 @@ export default function Landing() {
                 cursor: bubble.isDragging ? 'grabbing' : 'grab'
               }}
               onMouseDown={(e) => handleDesktopMouseDown(bubble.id, e)}
-              onTouchStart={(e) => handleMobileTouchStart(bubble.id, e)}
               initial={{ opacity: 0, scale: 0 }}
               animate={{ 
                 opacity: explosionActive ? 0 : 1, 
@@ -1680,6 +1666,8 @@ export default function Landing() {
             box-sizing: border-box;
             width: 100%;
             overflow-x: hidden;
+            touch-action: auto; /* Permite scroll e touch normal */
+            user-select: auto; /* Permite seleção de texto no mobile */
           }
           .hero-content-elevated { 
             padding: 0 1rem; 
@@ -1707,9 +1695,14 @@ export default function Landing() {
             overflow-x: hidden; 
             margin: 0; 
             padding: 0;
+            touch-action: manipulation; /* Otimiza touch para scroll e zoom */
           }
           * { 
             box-sizing: border-box; 
+          }
+          /* Garantir que todos os elementos sejam tocáveis no mobile */
+          button, a, [role="button"] {
+            touch-action: manipulation;
           }
         }
       `}</style>
