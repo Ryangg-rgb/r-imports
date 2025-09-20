@@ -278,7 +278,7 @@ export default function Landing() {
         cancelAnimationFrame(animationFrameId)
       }
     }
-  }, [bubbles])
+  }, [bubbles, checkBubbleCollisions])
   
   // Função para obter todas as imagens disponíveis de um produto
   const getAvailableImages = (product: any) => {
