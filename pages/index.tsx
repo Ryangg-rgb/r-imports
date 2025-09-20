@@ -3,6 +3,37 @@ import LandingHeader from '../components/LandingHeader'
 import { useEffect, useState, useCallback } from 'react'
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 
+// Hook para detectar tipo de dispositivo
+function useDeviceType() {
+  const [isMobile, setIsMobile] = useState(false)
+  
+  useEffect(() => {
+    const checkDevice = () => {
+      // Verifica user agent
+      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera
+      const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i
+      
+      // Verifica capacidades touch
+      const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+      
+      // Verifica largura da tela
+      const isSmallScreen = window.innerWidth <= 768
+      
+      // É mobile se tem user agent mobile OU (tem touch E tela pequena)
+      const mobile = mobileRegex.test(userAgent) || (hasTouchScreen && isSmallScreen)
+      
+      setIsMobile(mobile)
+    }
+    
+    checkDevice()
+    window.addEventListener('resize', checkDevice)
+    
+    return () => window.removeEventListener('resize', checkDevice)
+  }, [])
+  
+  return isMobile
+}
+
 // Função para gerar array de imagens dinamicamente
 function generateImages(productId: string, maxCount = 10) {
   const images = []
@@ -47,85 +78,25 @@ export default function Landing() {
   const [showFinalMessage, setShowFinalMessage] = useState(false)
   const [isReconstructing, setIsReconstructing] = useState(false)
   
+  // Detectar tipo de dispositivo
+  const isMobile = useDeviceType()
+  
   // Resetar índice da imagem quando o produto mudar
   useEffect(() => {
     setCurrentImageIndex(0)
   }, [selectedProduct])
 
-  // Event listeners globais para movimento das bolhas
-  useEffect(() => {
-    const handleMove = (e: MouseEvent | TouchEvent) => {
-      const draggingBubble = bubbles.find(b => b.isDragging)
-      if (!draggingBubble) return
-
-      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
-      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
-      
-      updateBubblePosition(draggingBubble.id, clientX, clientY)
-    }
-
-    const handleMouseMove = (e: MouseEvent) => handleMove(e)
-    const handleTouchMove = (e: TouchEvent) => {
-      e.preventDefault() // Previne scroll
-      handleMove(e)
-    }
-
-    // Adicionar listeners
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('touchmove', handleTouchMove, { passive: false })
-    document.addEventListener('mouseup', handleEnd)
-    document.addEventListener('touchend', handleEnd)
-    document.addEventListener('touchcancel', handleEnd)
-
-    // Cleanup
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('touchmove', handleTouchMove)
-      document.removeEventListener('mouseup', handleEnd)
-      document.removeEventListener('touchend', handleEnd)
-      document.removeEventListener('touchcancel', handleEnd)
-    }
-  }, [bubbles]) // Dependência para atualizar quando bubbles mudam
-  
-  // Funções para arrastar bolhas
-  // Sistema unificado de arrasto para desktop e mobile
-  const handleBubbleStart = (bubbleId: number, clientX: number, clientY: number) => {
-    setBubbles(prev => prev.map(b => 
-      b.id === bubbleId ? { ...b, isDragging: true } : b
-    ))
-    
-    // Calcular posição inicial
-    updateBubblePosition(bubbleId, clientX, clientY)
-  }
-
-  const handleBubbleMouseDown = (bubbleId: number, e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    handleBubbleStart(bubbleId, e.clientX, e.clientY)
-  }
-
-  const handleBubbleTouchStart = (bubbleId: number, e: React.TouchEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    const touch = e.touches[0]
-    if (touch) {
-      handleBubbleStart(bubbleId, touch.clientX, touch.clientY)
-    }
-  }
-
-  // Função unificada para atualizar posição das bolhas
-  const updateBubblePosition = (bubbleId: number, clientX: number, clientY: number) => {
+  // ========== SISTEMA DESKTOP (Mouse) ==========
+  const updateBubblePositionDesktop = (bubbleId: number, clientX: number, clientY: number) => {
     const heroSection = document.querySelector('.hero-section')
     if (!heroSection) return
     
     const rect = heroSection.getBoundingClientRect()
-    
-    // Calcular posição em porcentagem
     const x = ((clientX - rect.left) / rect.width) * 100
     const y = ((clientY - rect.top) / rect.height) * 100
     
-    // Limites seguros para evitar que as bolhas saiam da área
-    const margin = 12 // Margem de segurança aumentada
+    // Desktop: permitir movimento por toda a área (margem menor)
+    const margin = 5 // 5% de margem para desktop
     const clampedX = Math.max(margin, Math.min(100 - margin, x))
     const clampedY = Math.max(margin, Math.min(100 - margin, y))
     
@@ -133,12 +104,98 @@ export default function Landing() {
       b.id === bubbleId ? { ...b, x: clampedX, y: clampedY } : b
     ))
   }
-  
-  const handleEnd = () => {
+
+  const handleDesktopMouseDown = (bubbleId: number, e: React.MouseEvent) => {
+    if (isMobile) return // Só funciona no desktop
+    e.preventDefault()
+    e.stopPropagation()
+    setBubbles(prev => prev.map(b => 
+      b.id === bubbleId ? { ...b, isDragging: true } : b
+    ))
+    updateBubblePositionDesktop(bubbleId, e.clientX, e.clientY)
+  }
+
+  const handleDesktopEnd = () => {
     setBubbles(prev => prev.map(b => ({ ...b, isDragging: false })))
     checkBubbleCollisions()
   }
-  
+
+  // Event listeners para DESKTOP
+  useEffect(() => {
+    if (isMobile) return // Não ativar no mobile
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const draggingBubble = bubbles.find(b => b.isDragging)
+      if (!draggingBubble) return
+      updateBubblePositionDesktop(draggingBubble.id, e.clientX, e.clientY)
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleDesktopEnd)
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleDesktopEnd)
+    }
+  }, [bubbles, isMobile])
+
+  // ========== SISTEMA MOBILE (Touch) ==========
+  const updateBubblePositionMobile = (bubbleId: number, clientX: number, clientY: number) => {
+    const heroSection = document.querySelector('.hero-section')
+    if (!heroSection) return
+    
+    const rect = heroSection.getBoundingClientRect()
+    const x = ((clientX - rect.left) / rect.width) * 100
+    const y = ((clientY - rect.top) / rect.height) * 100
+    
+    // Mobile: margem maior para evitar toques acidentais nas bordas
+    const margin = 15 // 15% de margem para mobile
+    const clampedX = Math.max(margin, Math.min(100 - margin, x))
+    const clampedY = Math.max(margin, Math.min(100 - margin, y))
+    
+    setBubbles(prev => prev.map(b => 
+      b.id === bubbleId ? { ...b, x: clampedX, y: clampedY } : b
+    ))
+  }
+
+  const handleMobileTouchStart = (bubbleId: number, e: React.TouchEvent) => {
+    if (!isMobile) return // Só funciona no mobile
+    e.preventDefault()
+    e.stopPropagation()
+    setBubbles(prev => prev.map(b => 
+      b.id === bubbleId ? { ...b, isDragging: true } : b
+    ))
+    const touch = e.touches[0]
+    updateBubblePositionMobile(bubbleId, touch.clientX, touch.clientY)
+  }
+
+  const handleMobileEnd = () => {
+    setBubbles(prev => prev.map(b => ({ ...b, isDragging: false })))
+    checkBubbleCollisions()
+  }
+
+  // Event listeners para MOBILE
+  useEffect(() => {
+    if (!isMobile) return // Não ativar no desktop
+    
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault() // Previne scroll
+      const draggingBubble = bubbles.find(b => b.isDragging)
+      if (!draggingBubble || !e.touches[0]) return
+      updateBubblePositionMobile(draggingBubble.id, e.touches[0].clientX, e.touches[0].clientY)
+    }
+
+    document.addEventListener('touchmove', handleTouchMove, { passive: false })
+    document.addEventListener('touchend', handleMobileEnd)
+    document.addEventListener('touchcancel', handleMobileEnd)
+
+    return () => {
+      document.removeEventListener('touchmove', handleTouchMove)
+      document.removeEventListener('touchend', handleMobileEnd)
+      document.removeEventListener('touchcancel', handleMobileEnd)
+    }
+  }, [bubbles, isMobile])
+
   // Função para verificar colisões e fusões entre bolhas
   const checkBubbleCollisions = () => {
     const threshold = 15 // Distância mínima para considerar colisão
@@ -276,70 +333,7 @@ export default function Landing() {
     }, 7500)
   }
   
-  // Event listeners globais para capturar movimento fora da seção
-  useEffect(() => {
-    let animationFrameId: number
-    
-    // Eventos unificados de movimento
-    const handleGlobalMove = (clientX: number, clientY: number) => {
-      const draggingBubble = bubbles.find(b => b.isDragging)
-      if (!draggingBubble) return
-      
-      // Usar requestAnimationFrame para performance
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId)
-      }
-      
-      animationFrameId = requestAnimationFrame(() => {
-        updateBubblePosition(draggingBubble.id, clientX, clientY)
-      })
-    }
-
-    const handleGlobalMouseMove = (e: MouseEvent) => {
-      e.preventDefault()
-      handleGlobalMove(e.clientX, e.clientY)
-    }
-
-    const handleGlobalTouchMove = (e: TouchEvent) => {
-      e.preventDefault()
-      const touch = e.touches[0]
-      if (touch) {
-        handleGlobalMove(touch.clientX, touch.clientY)
-      }
-    }
-
-    const handleGlobalEnd = () => {
-      setBubbles(prev => prev.map(b => ({ ...b, isDragging: false })))
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId)
-      }
-      // Verificar colisões após soltar
-      setTimeout(checkBubbleCollisions, 100)
-    }
-    
-    // Adicionar eventos se alguma bolha está sendo arrastada
-    if (bubbles.some(b => b.isDragging)) {
-      // Eventos de mouse
-      document.addEventListener('mousemove', handleGlobalMouseMove, { passive: false })
-      document.addEventListener('mouseup', handleGlobalEnd, { passive: false })
-      
-      // Eventos de touch
-      document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false })
-      document.addEventListener('touchend', handleGlobalEnd, { passive: false })
-      document.addEventListener('touchcancel', handleGlobalEnd, { passive: false })
-    }
-    
-    return () => {
-      document.removeEventListener('mousemove', handleGlobalMouseMove)
-      document.removeEventListener('mouseup', handleGlobalEnd)
-      document.removeEventListener('touchmove', handleGlobalTouchMove)
-      document.removeEventListener('touchend', handleGlobalEnd)
-      document.removeEventListener('touchcancel', handleGlobalEnd)
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId)
-      }
-    }
-  }, [bubbles, checkBubbleCollisions])  // Função para obter todas as imagens disponíveis de um produto
+  // Função para obter todas as imagens disponíveis de um produto
   const getAvailableImages = (product: any) => {
     // Por enquanto vamos assumir que cada produto tem até 6 fotos
     const imageMap: Record<string, number> = {
@@ -647,8 +641,8 @@ export default function Landing() {
                 top: `${bubble.y}%`,
                 cursor: bubble.isDragging ? 'grabbing' : 'grab'
               }}
-              onMouseDown={(e) => handleBubbleStart(bubble.id, e.clientX, e.clientY)}
-              onTouchStart={(e) => handleBubbleStart(bubble.id, e.touches[0].clientX, e.touches[0].clientY)}
+              onMouseDown={(e) => handleDesktopMouseDown(bubble.id, e)}
+              onTouchStart={(e) => handleMobileTouchStart(bubble.id, e)}
               initial={{ opacity: 0, scale: 0 }}
               animate={{ 
                 opacity: explosionActive ? 0 : 1, 
