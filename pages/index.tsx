@@ -1,6 +1,6 @@
 import Head from 'next/head'
 import LandingHeader from '../components/LandingHeader'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 
 // Função para gerar array de imagens dinamicamente
@@ -88,7 +88,7 @@ export default function Landing() {
   }
   
   // Função para verificar colisões e fusões entre bolhas
-  const checkBubbleCollisions = () => {
+  const checkBubbleCollisions = useCallback(() => {
     const threshold = 15 // Distância mínima para considerar colisão
     
     for (let i = 0; i < bubbles.length; i++) {
@@ -174,7 +174,7 @@ export default function Landing() {
     setTimeout(() => {
       setFusionEffect(null)
     }, 800)
-  }
+  }, [bubbles, nextBubbleId])
   
   // Função para ativar a explosão épica
   const triggerExplosion = () => {
