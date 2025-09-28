@@ -409,7 +409,7 @@ export default function Landing() {
           nome: 'Action Figure Venom',
           preco: 'R$ 50',
           descricao: 'Action figure com acabamento impecável e base',
-          disponivel: 'OLX',
+          disponivel: '🔴 VENDIDO',
           descricaoCompleta: 'Action figure do Venom com acabamento impecável e base personalizada. Detalhes fiéis ao personagem, ótima peça para coleções da Marvel ou setups diferenciados. Altura aproximada: 19 cm.',
           especificacoes: ['Altura 19 cm', 'Acabamento premium', 'Base personalizada', 'Detalhes fiéis', 'Material resistente', 'Colecionável Marvel'],
           imagens: generateImages('venom_figure')
@@ -419,7 +419,7 @@ export default function Landing() {
           nome: 'Action Figure Majin Vegeta',
           preco: 'R$ 60',
           descricao: 'Boneco Majin Vegeta Super Saiyajin detalhado',
-          disponivel: 'OLX',
+          disponivel: '🔴 VENDIDO',
           descricaoCompleta: 'Boneco do Majin Vegeta Super Saiyajin, cheio de detalhes: cabelo dourado, roupa rasgada e marca "M" na testa. Acabamento realista e resistente. Altura aproximada: 20 cm. Peça perfeita para fãs de Dragon Ball e colecionadores.',
           especificacoes: ['Altura 20 cm', 'Cabelo dourado', 'Marca "M" na testa', 'Roupa rasgada detalhada', 'Acabamento realista', 'Dragon Ball oficial'],
           imagens: generateImages('majin_vegeta')
