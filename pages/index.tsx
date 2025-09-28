@@ -329,8 +329,6 @@ export default function Landing() {
       'fone_lenovo': 4,
       'teclado_irok': 6,
       'bonsai': 6,
-      'venom_figure': 4,
-      'majin_vegeta': 4,
       'gtr_miniatura': 6,
       'fusca_classico': 4
     }
@@ -403,26 +401,6 @@ export default function Landing() {
           descricaoCompleta: 'Linda mini árvore bonsai artificial, perfeita para decorar qualquer ambiente. Toque de natureza e elegância sem sujeira ou manutenção. Compacta, bonita e prática.',
           especificacoes: ['Sem manutenção', 'Compacto e elegante', 'Material resistente', 'Decoração premium', 'Fácil limpeza', 'Envio em 48h'],
           imagens: generateImages('bonsai')
-        },
-        {
-          id: 'venom_figure',
-          nome: 'Action Figure Venom',
-          preco: 'R$ 50',
-          descricao: 'Action figure com acabamento impecável e base',
-          disponivel: '🔴 VENDIDO',
-          descricaoCompleta: 'Action figure do Venom com acabamento impecável e base personalizada. Detalhes fiéis ao personagem, ótima peça para coleções da Marvel ou setups diferenciados. Altura aproximada: 19 cm.',
-          especificacoes: ['Altura 19 cm', 'Acabamento premium', 'Base personalizada', 'Detalhes fiéis', 'Material resistente', 'Colecionável Marvel'],
-          imagens: generateImages('venom_figure')
-        },
-        {
-          id: 'majin_vegeta',
-          nome: 'Action Figure Majin Vegeta',
-          preco: 'R$ 60',
-          descricao: 'Boneco Majin Vegeta Super Saiyajin detalhado',
-          disponivel: '🔴 VENDIDO',
-          descricaoCompleta: 'Boneco do Majin Vegeta Super Saiyajin, cheio de detalhes: cabelo dourado, roupa rasgada e marca "M" na testa. Acabamento realista e resistente. Altura aproximada: 20 cm. Peça perfeita para fãs de Dragon Ball e colecionadores.',
-          especificacoes: ['Altura 20 cm', 'Cabelo dourado', 'Marca "M" na testa', 'Roupa rasgada detalhada', 'Acabamento realista', 'Dragon Ball oficial'],
-          imagens: generateImages('majin_vegeta')
         },
         {
           id: 'gtr_miniatura',
